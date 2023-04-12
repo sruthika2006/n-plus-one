@@ -30,7 +30,7 @@ const typeDefs = gql`
 `
 
 const client = new PrismaClient({
-  log: ['query'],
+  log: ['query']
 })
 
 const resolvers = {
@@ -43,26 +43,22 @@ const resolvers = {
   },
   User: {
     posts: async (user, { take = 10 }) => {
-      return client.user
-        .findFirst({
-          where: {
-            id: user.id,
-          },
-        })
-        .posts({
-          take,
-        })
+      return client.post.findMany({
+        where: {
+          authorId: user.id,
+        },
+        take,
+      })
     },
   },
   Post: {
     comments: async (post, { take = 10 }) => {
-      return client.post
-        .findFirst({
-          where: {
-            id: post.id,
-          },
-        })
-        .comments()
+      return client.comment.findMany({
+        where: {
+          postId: post.id,
+        },
+        take,
+      })
     },
   },
 }
@@ -77,5 +73,5 @@ server
     port: 4001,
   })
   .then(({ url }) => {
-   console.log(`🚀 Server ready at ${url}`)
+    // console.log(`🚀 Server ready at ${url}`)
   })

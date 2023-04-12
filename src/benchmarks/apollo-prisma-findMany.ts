@@ -29,7 +29,9 @@ const typeDefs = gql`
   }
 `
 
-const client = new PrismaClient()
+const client = new PrismaClient({
+  log: ['query']
+})
 
 const resolvers = {
   Query: {
@@ -40,22 +42,20 @@ const resolvers = {
     },
   },
   User: {
-    posts: async (user, { take = 10 }) => {
+    posts: async (user) => {
       return client.post.findMany({
         where: {
           authorId: user.id,
         },
-        take,
       })
     },
   },
   Post: {
-    comments: async (post, { take = 10 }) => {
+    comments: async (post) => {
       return client.comment.findMany({
         where: {
           postId: post.id,
         },
-        take,
       })
     },
   },

@@ -101,5 +101,5 @@ server
     port: 4001,
   })
   .then(({ url }) => {
-    // console.log(`🚀 Server ready at ${url}`)
+    console.log(`🚀 Server ready at ${url}`)
   })

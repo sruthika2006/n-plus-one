@@ -6,7 +6,7 @@ const typeDefs = gql`
     id: Int!
     email: String!
     name: String!
-    posts(take: Int): [Post!]!
+    posts: [Post!]!
   }
 
   type Post {
@@ -15,7 +15,7 @@ const typeDefs = gql`
     content: String
     published: Boolean!
     author: User
-    comments(take: Int): [Comment!]!
+    comments: [Comment!]!
   }
 
   type Comment {
@@ -30,7 +30,7 @@ const typeDefs = gql`
 `
 
 const client = new PrismaClient({
-  log: ['query'],
+  log: ['query', 'info', 'warn', 'error']
 })
 
 const resolvers = {
@@ -42,27 +42,21 @@ const resolvers = {
     },
   },
   User: {
-    posts: async (user, { take = 10 }) => {
-      return client.user
-        .findFirst({
-          where: {
-            id: user.id,
-          },
-        })
-        .posts({
-          take,
-        })
+    posts: async (user) => {
+      return client.user.findUnique({
+        where: {
+          id: user.id,
+        },
+      }).posts()
     },
   },
   Post: {
-    comments: async (post, { take = 10 }) => {
-      return client.post
-        .findFirst({
-          where: {
-            id: post.id,
-          },
-        })
-        .comments()
+    comments: async (post) => {
+      return client.post.findUnique({
+        where: {
+          id: post.id,
+        },
+      }).comments()
     },
   },
 }
@@ -77,5 +71,5 @@ server
     port: 4001,
   })
   .then(({ url }) => {
-   console.log(`🚀 Server ready at ${url}`)
+    // console.log(`🚀 Server ready at ${url}`)
   })
