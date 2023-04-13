@@ -1,0 +1,120 @@
+diff --git a/node_modules/nexus-plugin-prisma/dist/builder.js b/node_modules/nexus-plugin-prisma/dist/builder.js
+index 1ae4e15..c72beec 100644
+--- a/node_modules/nexus-plugin-prisma/dist/builder.js
++++ b/node_modules/nexus-plugin-prisma/dist/builder.js
+@@ -193,7 +193,10 @@ class SchemaBuilder {
+                                 });
+                             }
+                             args = this.paginationStrategy.resolve(args);
+-                            return prismaClient[mappedField.prismaClientAccessor][mappedField.operation](args);
++
++                            const operation = mappedField.operation.replace(/One$/, '');
++
++                            return prismaClient[mappedField.prismaClientAccessor][operation](args);
+                         });
+                         const fieldConfig = this.buildFieldConfig({
+                             field: mappedField.field,
+@@ -407,8 +410,9 @@ class SchemaBuilder {
+             }
+         }
+         if (publisherConfig.ordering) {
+-            const orderByTypeName = `${field.outputType.type}OrderByInput`;
+-            const orderByTypeNamePreviewFeature = `${field.outputType.type}OrderByWithRelationInput`;
++            const orderByTypeName = `${field.outputType.type}OrderByWithRelationAndSearchRelevanceInput`;
++            const orderByTypeNamePreviewFeature = `${field.outputType.type}OrderByWithRelationAndSearchRelevanceInput`;
++
+             const orderByArg = field.args.find((arg) => (arg.inputType.type === orderByTypeName ||
+                 arg.inputType.type === orderByTypeNamePreviewFeature) &&
+                 arg.name === 'orderBy');
+@@ -422,6 +426,7 @@ class SchemaBuilder {
+                 graphQLTypeName: typeName,
+                 isWhereType: false,
+             });
++
+             if (inputType.fields.length > 0) {
+                 args.push({
+                     arg: orderByArg,
+diff --git a/node_modules/nexus-plugin-prisma/dist/dmmf/utils.js b/node_modules/nexus-plugin-prisma/dist/dmmf/utils.js
+index c7c18ff..d457867 100644
+--- a/node_modules/nexus-plugin-prisma/dist/dmmf/utils.js
++++ b/node_modules/nexus-plugin-prisma/dist/dmmf/utils.js
+@@ -2,19 +2,19 @@
+ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.getPrismaClientDmmf = void 0;
+ const getPrismaClientDmmf = (packagePath) => {
+-    let dmmf = undefined;
+-    try {
+-        dmmf = require(packagePath).dmmf;
+-    }
+-    catch (error) {
+-        throw new Error(`Failed to import prisma client package at ${packagePath}. The following error occured while trying:
+-        ${error.stack}`);
+-    }
+-    if (!dmmf) {
+-        throw new Error(`\
+-You most likely forgot to initialize the Prisma Client. Please run \`prisma generate\` and try to run it again.
+-If that does not solve your problem, please open an issue.`);
++    const getDmmfAsync = () => {
++        return require('@prisma/internals').getDMMF({
++            datamodelPath: require('path').join(
++                process.cwd(),
++                '../shared/levis-assortify-db/prisma/schema.prisma'
++            ),
++        })
+     }
++
++    const getDmmfSync = require('synchronized-promise')(getDmmfAsync);
++
++    const dmmf = getDmmfSync();
++
+     return dmmf;
+ };
+ exports.getPrismaClientDmmf = getPrismaClientDmmf;
+diff --git a/node_modules/nexus-plugin-prisma/dist/mapping.js b/node_modules/nexus-plugin-prisma/dist/mapping.js
+index b5afab7..3b7babc 100644
+--- a/node_modules/nexus-plugin-prisma/dist/mapping.js
++++ b/node_modules/nexus-plugin-prisma/dist/mapping.js
+@@ -17,17 +17,18 @@ const buildField = (mapping, operation) => {
+ const CRUD_MAPPED_FIELDS = {
+     Query: (m) => [buildField(m, 'findUnique'), buildField(m, 'findMany')],
+     Mutation: (m) => [
+-        buildField(m, 'create'),
+-        buildField(m, 'update'),
++        buildField(m, 'createOne'),
++        buildField(m, 'updateOne'),
+         buildField(m, 'updateMany'),
+-        buildField(m, 'delete'),
++        buildField(m, 'deleteOne'),
+         buildField(m, 'deleteMany'),
+-        buildField(m, 'upsert'),
++        buildField(m, 'upsertOne'),
+     ],
+ };
+ const getCrudMappedFields = (typeName, dmmf, namingStrategy = naming_strategies_1.defaultFieldNamingStrategy) => {
+     const mappedFields = utils_1.flatMap(dmmf.operations, (m) => CRUD_MAPPED_FIELDS[typeName](m)).filter((mappedField) => mappedField !== null);
+     const result = mappedFields.map((mappedField) => (Object.assign(Object.assign({}, mappedField), { field: Object.assign(Object.assign({}, dmmf.getOutputType(typeName).getField(mappedField.field)), { name: namingStrategy[mappedField.operation](mappedField.field, mappedField.model) }) })));
++
+     return result;
+ };
+ exports.getCrudMappedFields = getCrudMappedFields;
+diff --git a/node_modules/nexus-plugin-prisma/dist/naming-strategies.js b/node_modules/nexus-plugin-prisma/dist/naming-strategies.js
+index c491dd2..c543e0f 100644
+--- a/node_modules/nexus-plugin-prisma/dist/naming-strategies.js
++++ b/node_modules/nexus-plugin-prisma/dist/naming-strategies.js
+@@ -21,11 +21,11 @@ exports.defaultArgsNamingStrategy = {
+ exports.defaultFieldNamingStrategy = {
+     findUnique: (_, modelName) => camelcase_1.default(modelName),
+     findMany: (_, modelName) => camelcase_1.default(pluralize_1.default(modelName)),
+-    create: (fieldName) => fieldName,
+-    update: (fieldName) => fieldName,
+-    delete: (fieldName) => fieldName,
++    createOne: (fieldName) => fieldName,
++    updateOne: (fieldName) => fieldName,
++    deleteOne: (fieldName) => fieldName,
+     deleteMany: (fieldName) => fieldName,
+     updateMany: (fieldName) => fieldName,
+-    upsert: (fieldName) => fieldName,
++    upsertOne: (fieldName) => fieldName,
+ };
+ //# sourceMappingURL=naming-strategies.js.map
+\ No newline at end of file
