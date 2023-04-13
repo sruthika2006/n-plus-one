@@ -58,7 +58,7 @@ index c7c18ff..d457867 100644
 +        return require('@prisma/internals').getDMMF({
 +            datamodelPath: require('path').join(
 +                process.cwd(),
-+                '../shared/levis-assortify-db/prisma/schema.prisma'
++                'prisma/schema.prisma'
 +            ),
 +        })
      }
