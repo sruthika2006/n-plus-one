@@ -62,7 +62,7 @@ const schema = makeSchema({
   ],
   outputs: {
     typegen: join(__dirname, "__generated__", "nexus-typegen.ts"),
-    schema: join(__dirname, "__generated__", "schema.graphql"),
+    schema: join(__dirname, "__generated__", "nexus-schema.graphql"),
   },
 });
 
