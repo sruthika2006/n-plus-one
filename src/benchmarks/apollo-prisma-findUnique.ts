@@ -1,12 +1,12 @@
-import { gql, ApolloServer } from 'apollo-server'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from "@prisma/client";
+import { ApolloServer, gql } from "apollo-server";
 
 const typeDefs = gql`
   type User {
     id: Int!
     email: String!
     name: String!
-    posts: [Post!]!
+    posts(take: Int): [Post!]!
   }
 
   type Post {
@@ -15,7 +15,7 @@ const typeDefs = gql`
     content: String
     published: Boolean!
     author: User
-    comments: [Comment!]!
+    comments(take: Int): [Comment!]!
   }
 
   type Comment {
@@ -27,49 +27,53 @@ const typeDefs = gql`
   type Query {
     users(take: Int): [User!]!
   }
-`
+`;
 
 const client = new PrismaClient({
-  log: ['query', 'info', 'warn', 'error']
-})
+  log: ["query", "info", "warn", "error"],
+});
 
 const resolvers = {
   Query: {
     users: async (_, { take = 10 }) => {
       return client.user.findMany({
         take,
-      })
+      });
     },
   },
   User: {
-    posts: async (user) => {
-      return client.user.findUnique({
-        where: {
-          id: user.id,
-        },
-      }).posts()
+    posts: async (user, { take = 10 }) => {
+      return client.user
+        .findUnique({
+          where: {
+            id: user.id,
+          },
+        })
+        .posts({ take });
     },
   },
   Post: {
-    comments: async (post) => {
-      return client.post.findUnique({
-        where: {
-          id: post.id,
-        },
-      }).comments()
+    comments: async (post, { take = 10 }) => {
+      return client.post
+        .findUnique({
+          where: {
+            id: post.id,
+          },
+        })
+        .comments({ take });
     },
   },
-}
+};
 
 const server = new ApolloServer({
   typeDefs,
   resolvers,
-})
+});
 
 server
   .listen({
     port: 4001,
   })
   .then(({ url }) => {
-    // console.log(`🚀 Server ready at ${url}`)
-  })
+    console.log(`🚀 Server ready at ${url}`);
+  });

@@ -1,5 +1,5 @@
-import { gql, ApolloServer } from 'apollo-server'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from "@prisma/client";
+import { ApolloServer, gql } from "apollo-server";
 
 const typeDefs = gql`
   type User {
@@ -27,49 +27,51 @@ const typeDefs = gql`
   type Query {
     users(take: Int): [User!]!
   }
-`
+`;
 
 const client = new PrismaClient({
-  log: ['query']
-})
+  log: ["query", "info", "warn", "error"],
+});
 
 const resolvers = {
   Query: {
     users: async (_, { take = 10 }) => {
       return client.user.findMany({
         take,
-      })
+      });
     },
   },
   User: {
-    posts: async (user) => {
+    posts: async (user, { take = 10 }) => {
       return client.post.findMany({
         where: {
           authorId: user.id,
         },
-      })
+        take,
+      });
     },
   },
   Post: {
-    comments: async (post) => {
+    comments: async (post, { take = 10 }) => {
       return client.comment.findMany({
         where: {
           postId: post.id,
         },
-      })
+        take,
+      });
     },
   },
-}
+};
 
 const server = new ApolloServer({
   typeDefs,
   resolvers,
-})
+});
 
 server
   .listen({
     port: 4001,
   })
   .then(({ url }) => {
-    // console.log(`🚀 Server ready at ${url}`)
-  })
+    console.log(`🚀 Server ready at ${url}`);
+  });
